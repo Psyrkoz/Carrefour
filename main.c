@@ -1,5 +1,6 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <sys/shm.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,8 +17,9 @@ int creeSemaphore()
     return semget((key_t)SEMA, NB_VAL, IPC_CREAT | S_IRUSR | S_IWUSR);
 }
 
-void initialiserSemaphore(int mutex, int init_value, struct sembuf routes[4])
+struct sembuf* initialiserSemaphore(int mutex, int init_value, struct sembuf* routes)
 {
+    //struct sembuf* routes = malloc(NB_VAL*sizeof(struct sembuf));
     int i;
     for(i = 0; i < NB_VAL; i++)
     {
@@ -26,6 +28,8 @@ void initialiserSemaphore(int mutex, int init_value, struct sembuf routes[4])
         routes[i].sem_op  = semctl(mutex, i, GETVAL);
         routes[i].sem_flg = 0;
     }
+    
+    return routes;
 }
 
 void displaySemaphore(int mutex)
@@ -50,36 +54,14 @@ int carrefourBloque(int mutex)
 
 int main()
 {
-    struct sembuf routes[4];
+    int shmID = shmget((key_t)SHM, NB_VAL*sizeof(struct sembuf), IPC_CREAT |  S_IRUSR | S_IWUSR);
+    struct sembuf* routes = (struct sembuf*)shmat(shmID, 0, NULL);
+
     int mutex = creeSemaphore();
-    initialiserSemaphore(mutex, -1, routes);
-
-    while(1)
-        pid_t lol = fork();
-        if(lol == 0)
-        {
-            initCar();
-            roulerDPEL() { 
-                CheckSema(); 
-                if(semagood) { 
-                    rouleSurLeCrossroad(){ 
-                        if(check numRoute = dest) 
-                        {delete voiture} else {roulerDPEL();}
-                    }; 
-                }
-            }
-        };
-        break;
-        }
-        else
-        {
-            sleep(rand());
-        }
-
+    initialiserSemaphore(mutex, 0, routes);
 
     int i;
     for(i = 0; i < NB_VAL; i++)
         printf("Nombre: %d, Operation: %d,  Flag: %d\n", routes[i].sem_num, routes[i].sem_op, routes[i].sem_flg);
-
     return 0;
 }
