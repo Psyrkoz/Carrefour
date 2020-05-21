@@ -87,6 +87,7 @@ int main()
     for(i = 0; i < NB_VAL; i++)
         printf("\tRang: %d; Valeur: %d;\n", i, semctl(mutex, i, GETVAL));
 
+    // Un dessin qui modélise le carrefour très basiquement tout les 1 secondes
     while(1)
     {
         system("clear");
