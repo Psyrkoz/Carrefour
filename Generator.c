@@ -87,7 +87,7 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
     {
         // Si la voiture est totalement bloqué dans le carrefour et qu'elle ne peut plus bougé,
         // la logique d'un conducteur serait de sortir du carrefour pour ne pas rester bloqué dans le carrefour a vie.
-        fprintf(stderr, "Moi etre bloque dans carrefour mais moi partir de la route %d\n", v->routeActuelle->num);
+        fprintf(stderr, "%d Moi etre bloque dans carrefour mais moi partir de la route %d\n", v->numero, v->routeActuelle->num);
         
         // Crée une structure buffer et remet a 1 le semaphore correspondant a la route où était la voiture
         // La route numéro 2 par exemple sera le semaphore numero 2
@@ -102,14 +102,13 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
     else if(v->routeActuelle != NULL && (v->routeActuelle->num == v->destination))
     {
         // Si c'est le cas, on fait la même opération que précedemement.
-        fprintf(stderr, "Moi etre arriver a ma destination (%d)! PogChamp\n", v->destination);
+        fprintf(stderr, "%d - Moi etre arriver a ma destination (%d)!\n", v->numero, v->destination);
         
         struct sembuf buffer;
         buffer.sem_num = v->routeActuelle->num;
         buffer.sem_op = 1;
 
         semop(mutex, &buffer, 1);
-        fprintf(stderr, "Et grace a moi, il y a peut etre un 1: %d %d %d %d\n", semctl(mutex, 0, GETVAL), semctl(mutex, 1, GETVAL), semctl(mutex, 2, GETVAL), semctl(mutex, 3, GETVAL));
         return 0;
     }
     // Ensuite, on verifie si la route actuelle est NULL (donc la voiture est posé sur aucune route)
@@ -121,9 +120,9 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
         buffer.sem_num = v->origine;
         buffer.sem_op = -1;
 
-        fprintf(stderr, "Moi vouloir entrer dans route %d\n", v->origine);
+        fprintf(stderr, "%d - Moi vouloir entrer dans route %d\n", v->numero, v->origine);
         semop(mutex, &buffer, 1);
-        fprintf(stderr, "Moi etre entrer dans route %d\n", v->origine);
+        fprintf(stderr, "%d - Moi etre entrer dans route %d\n", v->numero, v->origine);
 
         // Une fois que l'on a réussi a passé, on met la route actuelle de la voiture = a l'origine de celle-ci
         v->routeActuelle = &roads[v->origine];
@@ -137,11 +136,11 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
         buffer.sem_num = v->routeActuelle->next->num;
         buffer.sem_op = -1;
 
-        fprintf(stderr, "Moi vouloir entrer dans route %d\n", v->routeActuelle->next->num);
+        fprintf(stderr, "%d - Moi vouloir entrer dans route %d\n", v->numero, v->routeActuelle->next->num);
         semop(mutex, &buffer, 1);
-        fprintf(stderr, "Moi etre entrer dans route %d\n", v->routeActuelle->next->num);
+        fprintf(stderr, "%d - Moi etre entrer dans route %d\n", v->numero, v->routeActuelle->next->num);
 
-        fprintf(stderr, "Moi vouloir partir de route %d\n", v->routeActuelle->num);
+        fprintf(stderr, "%d - Moi vouloir partir de route %d\n", v->numero, v->routeActuelle->num);
 
         // Une fois arrivé sur la prochaine route, on enlève la voiture de la route sur laquel il était.
         struct sembuf bufferDeux;
@@ -149,7 +148,7 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
         bufferDeux.sem_op = 1;
 
         semop(mutex, &bufferDeux, 1);
-        fprintf(stderr, "Moi etre partir de route %d\n", v->routeActuelle->num);
+        fprintf(stderr, "%d - Moi etre partir de route %d\n", v->numero, v->routeActuelle->num);
 
         // Finalement on met la variable routeActuelle de la voiture = a là route qui suit.
         v->routeActuelle = v->routeActuelle->next;
