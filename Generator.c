@@ -110,9 +110,8 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
         struct sembuf buffer;
         buffer.sem_num = v->routeActuelle;
         buffer.sem_op = 1;
-        semop(mutex, &buffer, 1);
-
         roads[v->routeActuelle].numVoitureDessus = -1;
+        semop(mutex, &buffer, 1);
         return 0;
     }
     // Dernièrement, on test si le carrefour est bloqué
@@ -127,9 +126,8 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
         struct sembuf buffer;
         buffer.sem_num = v->routeActuelle;
         buffer.sem_op = 1;
-
-        semop(mutex, &buffer, 1);
         roads[v->routeActuelle].numVoitureDessus = -1;
+        semop(mutex, &buffer, 1);
         return 0;
     }
     // Et dernièrement, c'est le cas ou la voiture est sur la route est n'est pas arrivé a destination.
@@ -150,12 +148,11 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
         struct sembuf bufferDeux;
         bufferDeux.sem_num = v->routeActuelle;
         bufferDeux.sem_op = 1;
-
+        roads[v->routeActuelle].numVoitureDessus = -1;
         semop(mutex, &bufferDeux, 1);
         fprintf(stderr, "%d - Moi etre partie de route %d\n", v->numero, v->routeActuelle);
 
         // Finalement on met la variable routeActuelle de la voiture = a là route qui suit.
-        roads[v->routeActuelle].numVoitureDessus = -1;
         v->routeActuelle = roads[v->routeActuelle].next;
         roads[v->routeActuelle].numVoitureDessus = v->numero;
         return 1;
