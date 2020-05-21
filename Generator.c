@@ -23,6 +23,7 @@ struct Road
 {
     int next;
     int num;
+    int numVoitureDessus;
 };
 
 /**
@@ -97,51 +98,53 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
 
         // Une fois que l'on a réussi a passé, on met la route actuelle de la voiture = a l'origine de celle-ci
         v->routeActuelle = roads[v->origine].num;
+        roads[v->origine].numVoitureDessus = v->numero;
         return 1;
     }
-    // On vérifie en premier si on peut faire avancé la voiture
-    // Pour arriver là, la voiture est forcement dans le carrefour
+    // Ensuite, on verifie si on est arrivé a destination (il est obligatoirement sur la route)
+    else if(v->routeActuelle == v->destination)
+    {
+        // Si on est arrivé a destination, on libère juste la semaphore ou était la voiture.
+        fprintf(stderr, "%d - Moi etre arriver a ma destination (%d)!\n", v->numero, v->destination);
+        
+        struct sembuf buffer;
+        buffer.sem_num = v->routeActuelle;
+        buffer.sem_op = 1;
+        semop(mutex, &buffer, 1);
+
+        roads[v->routeActuelle].numVoitureDessus = -1;
+        return 0;
+    }
+    // Dernièrement, on test si le carrefour est bloqué
     else if(carrefourBloque(mutex) == 1)
     {
         // Si la voiture est totalement bloqué dans le carrefour et qu'elle ne peut plus bougé,
         // la logique d'un conducteur serait de sortir du carrefour pour ne pas rester bloqué dans le carrefour a vie.
         fprintf(stderr, "%d Moi etre bloque dans carrefour mais moi partir de la route %d\n", v->numero, v->routeActuelle);
         
-        // Crée une structure buffer et remet a 1 le semaphore correspondant a la route où était la voiture
+        // Crée une structure buffer et remet a 1 le semaphore correspondant a la route où était la voiture pour faire partir la voiture.
         // La route numéro 2 par exemple sera le semaphore numero 2
         struct sembuf buffer;
         buffer.sem_num = v->routeActuelle;
         buffer.sem_op = 1;
 
         semop(mutex, &buffer, 1);
-        return 0;
-    }
-    // On vérifie ensuite si on est arrivé a destination
-    else if(v->routeActuelle == v->destination)
-    {
-        // Si c'est le cas, on fait la même opération que précedemement.
-        fprintf(stderr, "%d - Moi etre arriver a ma destination (%d)!\n", v->numero, v->destination);
-        
-        struct sembuf buffer;
-        buffer.sem_num = v->routeActuelle;
-        buffer.sem_op = 1;
-
-        semop(mutex, &buffer, 1);
+        roads[v->routeActuelle].numVoitureDessus = -1;
         return 0;
     }
     // Et dernièrement, c'est le cas ou la voiture est sur la route est n'est pas arrivé a destination.
     else
     {
-        // Premièrement on essaye d'aller sur la route qui suit.
-        fprintf(stderr, "%d - Moi vouloir aller vers route %d\n", v->numero, roads[v->routeActuelle].next);
+        // Premièrement on essaye d'aller sur la route qui suit en prenant le semaphore.
+        fprintf(stderr, "%d veut aller sur la route %d\n", v->numero, roads[v->routeActuelle].next);
         struct sembuf buffer;
         buffer.sem_num = roads[v->routeActuelle].next;
         buffer.sem_op = -1;
 
         semop(mutex, &buffer, 1);
-        fprintf(stderr, "%d - Moi etre aller dans route %d\n", v->numero, roads[v->routeActuelle].next);
+        fprintf(stderr, "%d est aller sur route %d\n", v->numero, roads[v->routeActuelle].next);
 
-        fprintf(stderr, "%d - Moi vouloir partie de route %d\n", v->numero, v->routeActuelle);
+        fprintf(stderr, "%d veut partir de la route %d\n", v->numero, v->routeActuelle);
 
         // Une fois arrivé sur la prochaine route, on enlève la voiture de la route sur laquel il était.
         struct sembuf bufferDeux;
@@ -152,7 +155,9 @@ int Drive(struct Voiture *v, struct Road* roads, int mutex)
         fprintf(stderr, "%d - Moi etre partie de route %d\n", v->numero, v->routeActuelle);
 
         // Finalement on met la variable routeActuelle de la voiture = a là route qui suit.
+        roads[v->routeActuelle].numVoitureDessus = -1;
         v->routeActuelle = roads[v->routeActuelle].next;
+        roads[v->routeActuelle].numVoitureDessus = v->numero;
         return 1;
     }
 }
@@ -229,7 +234,7 @@ int main()
                 // sinon les voitures irons tellement vite qu'il n'y aurait qu'une seul voiture sur le routes tout le temps
                 sleep(3);
             }
-            fprintf(stderr, "%d a fini son chemin, adieu.\n", v.numero);
+            fprintf(stderr, "%d est sortie du carrefour\n", v.numero);
             exit(0);
         }
         // Si le processus actuelle est le père
@@ -237,6 +242,7 @@ int main()
         {
             // On attends entre 5 et 10 secondes avant de crée une nouvelle voiture
             sleep((rand()% 5) + 5);
+            //sleep(4);
         }
     }
     return 0;

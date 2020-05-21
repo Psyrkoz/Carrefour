@@ -15,6 +15,7 @@ struct Road
 {
     int next;
     int num;
+    int numVoitureDessus;
 };
 
 /**
@@ -58,10 +59,12 @@ void initialiserRoad(struct Road* routes)
     {
         routes[i].num  = i;
         routes[i].next = i+1;
+        routes[i].numVoitureDessus = -1;
     }
 
     routes[NB_VAL - 1].num = NB_VAL - 1;
     routes[NB_VAL - 1].next = 0;
+    routes[NB_VAL - 1].numVoitureDessus = -1;
 }
 
 int main()
@@ -78,16 +81,26 @@ int main()
     // Initalise les routes mis en mémoire partagé
     initialiserRoad(routes);
 
-    for(i = 0; i < NB_VAL; i++)
-    {
-        printf("%d -> %d\n", routes[i].num, routes[i].next);
-    }
-
     // Juste un affichage pour être sûr que le semaphore est bien initialiser avec toutes les valeurs a 1
     printf("Valeur du semaphore:\n");
     
     for(i = 0; i < NB_VAL; i++)
         printf("\tRang: %d; Valeur: %d;\n", i, semctl(mutex, i, GETVAL));
+
+    while(1)
+    {
+        system("clear");
+        printf("-------------------------------------------------\n");
+        printf("                       |                         \n");
+        printf("%23d|%23d                         \n", routes[1].numVoitureDessus, routes[0].numVoitureDessus);
+        printf("                       |                         \n");
+        printf("-------------------------------------------------\n");
+        printf("                       |                         \n");
+        printf("%23d|%23d                         \n", routes[2].numVoitureDessus, routes[3].numVoitureDessus);
+        printf("                       |                         \n");
+        printf("-------------------------------------------------\n");
+        sleep(1);
+    }
         
     return 0;
 }
