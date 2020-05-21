@@ -13,7 +13,7 @@
 */
 struct Road 
 {
-    struct Road* next;
+    int next;
     int num;
 };
 
@@ -57,15 +57,16 @@ void initialiserRoad(struct Road* routes)
     for(i = 0; i < NB_VAL - 1; i++)
     {
         routes[i].num  = i;
-        routes[i].next = &routes[i+1];
+        routes[i].next = i+1;
     }
 
     routes[NB_VAL - 1].num = NB_VAL - 1;
-    routes[NB_VAL - 1].next = &routes[0];
+    routes[NB_VAL - 1].next = 0;
 }
 
 int main()
 {
+    int i;
     // Crée le segment de mémoire partagé et attache le tableau de routes dedans.
     int shmID = shmget((key_t)SHM, NB_VAL*sizeof(struct Road), IPC_CREAT |  S_IRUSR | S_IWUSR);
     struct Road* routes = (struct Road*)shmat(shmID, 0, NULL);
@@ -77,9 +78,14 @@ int main()
     // Initalise les routes mis en mémoire partagé
     initialiserRoad(routes);
 
+    for(i = 0; i < NB_VAL; i++)
+    {
+        printf("%d -> %d\n", routes[i].num, routes[i].next);
+    }
+
     // Juste un affichage pour être sûr que le semaphore est bien initialiser avec toutes les valeurs a 1
-    int i;
     printf("Valeur du semaphore:\n");
+    
     for(i = 0; i < NB_VAL; i++)
         printf("\tRang: %d; Valeur: %d;\n", i, semctl(mutex, i, GETVAL));
         
